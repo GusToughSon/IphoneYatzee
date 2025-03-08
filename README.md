@@ -12,6 +12,8 @@ Tired of rolling dice manually? Want an **AI-driven bot** that **plays Yahtzee f
 ✅ **Click the highest-scoring category for you** 🏆  
 ✅ **Repeat until the game is over!** 🔁  
 
+**⚠️ Designed to run on a Mac using screen mirroring with an iPhone.**
+
 ---
 
 ## **📌 Features & How It Works**
