@@ -1,42 +1,64 @@
 import time
 import sys
-import pyautogui
-import os
+import cv2
+import pytesseract
+import subprocess
+from window_capture import get_window_bounds, capture_region_screenshot
+from word_search import (
+    get_clue_words,
+    get_puzzle_grid,
+    find_word_in_grid,
+    find_all_words_in_grid
+)
 
-from focus_app import ensure_app_is_active
-from window_capture import get_window_bounds, capture_window_screenshot
-from object_detection import detect_objects
+# If Tesseract is not in PATH, set it manually:
+pytesseract.pytesseract.tesseract_cmd = "/opt/homebrew/bin/tesseract"
+
+def ensure_app_is_active(app_name: str) -> bool:
+    script = f'tell application "{app_name}" to activate'
+    proc = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+    return (proc.returncode == 0)
 
 def main():
-    app_name = "iPhone Mirroring"
-
-    # Ensure app is active
-    if not ensure_app_is_active(app_name):
-        print(f"❌ {app_name} is not running or not active.")
+    if not ensure_app_is_active("iPhone Mirroring"):
+        print("❌ iPhone Mirroring not running or not active.")
         sys.exit(1)
+    time.sleep(2)
 
-    time.sleep(2)  # Let it settle
-
-    # Get window bounds
-    wb = get_window_bounds(app_name)
-    if not wb:
-        print("❌ Could not get window bounds.")
+    bounds = get_window_bounds("iPhone Mirroring")
+    if not bounds:
+        print("❌ Could not get iPhone Mirroring window.")
         sys.exit(1)
+    (win_x, win_y, win_w, win_h) = bounds
 
-    (wx, wy, ww, wh) = wb
-    print(f"🖥️ iPhone Mirroring Window: X={wx}, Y={wy}, W={ww}, H={wh}")
+    capture_region_screenshot(1181, 200, 326, 75, "crossword_region.png")
+    capture_region_screenshot(1181, 275, 316, 370, "crossword_search.png")
 
-    # Take a screenshot
-    shot_path = capture_window_screenshot(app_name)
-    if not shot_path:
-        print("❌ Screenshot failed.")
+    clue_words = get_clue_words("crossword_region.png")
+    print("🔎 Clue Words:", clue_words)
+
+    grid = get_puzzle_grid("crossword_search.png")
+    if not grid:
+        print("❌ OCR failed to extract a puzzle grid.")
         sys.exit(1)
+    print("\n🧩 Puzzle Grid for Search:")
+for row in grid:
+    print(" | ".join(row))  # Adds better spacing to avoid merging issues
+    print("\n")
 
-    # Run detection
-    obj_positions, _ = detect_objects(shot_path)
-    print(f"📝 Final Objects: {obj_positions}")
+    found_words_info = []
+    for w in clue_words:
+        loc = find_word_in_grid(grid, w)
+        if loc:
+            found_words_info.append((w, loc))
 
-    print("✅ Done!")
+    auto_detected_words = find_all_words_in_grid(grid)
+    if auto_detected_words:
+        print("\n🔎 Additional Words Found in Grid:")
+        for word, loc in auto_detected_words:
+            print(f"✅ Found '{word}' at {loc}")
+
+    print("✅ Word search complete.")
 
 if __name__ == "__main__":
     main()

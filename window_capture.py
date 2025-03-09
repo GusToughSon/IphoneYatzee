@@ -1,12 +1,14 @@
-import subprocess
-import time
-import cv2
+# window_capture.py
+
 import os
+import subprocess
 
-def get_window_bounds(app_name):
-    """Gets the position and size of the iPhone Mirroring window."""
-
-    script = f'''
+def get_window_bounds(app_name: str):
+    """
+    AppleScript to get position & size of frontmost window of the specified app.
+    Returns (x,y,width,height) or None.
+    """
+    script = r'''
     tell application "System Events"
         set frontApp to first application process whose frontmost is true
         tell frontApp
@@ -15,46 +17,26 @@ def get_window_bounds(app_name):
     end tell
     return winBounds
     '''
-    
-    result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
-    window_data = result.stdout.strip().split(", ")
-
+    proc = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+    if proc.returncode != 0:
+        return None
     try:
-        x, y, width, height = map(int, window_data)
-        print(f"📏 Window Bounds: X={x}, Y={y}, Width={width}, Height={height}")
-        return x, y, width, height
-    except ValueError:
-        print("❌ Failed to retrieve window bounds.")
+        parts = proc.stdout.strip().split(", ")
+        x, y, w, h = map(int, parts)
+        return (x, y, w, h)
+    except:
         return None
 
-def capture_window_screenshot(app_name):
-    """Captures a screenshot of the iPhone Mirroring window."""
-    
-    # Get window position using AppleScript
-    script = f'''
-    tell application "System Events"
-        set frontApp to first application process whose frontmost is true
-        tell frontApp
-            set winBounds to position of window 1 & size of window 1
-        end tell
-    end tell
-    return winBounds
-    '''
-    result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
-    window_data = result.stdout.strip().split(", ")
+def capture_region_screenshot(x, y, width, height, output_path="region.png"):
+    """
+    Uses macOS screencapture command to grab a region: (x, y, width, height) in absolute screen coords.
+    Returns the output path if successful, else None.
+    """
+    if os.path.exists(output_path):
+        os.remove(output_path)
 
-    try:
-        x, y, width, height = map(int, window_data)
-        print(f"📏 Window Bounds: X={x}, Y={y}, Width={width}, Height={height}")
-
-        screenshot_path = "iPhone_Mirroring_window.png"
-
-        # Take a screenshot of the window
-        os.system(f"screencapture -R{x},{y},{width},{height} {screenshot_path}")
-        print(f"📸 Screenshot saved: {screenshot_path}")
-
-        return screenshot_path
-
-    except ValueError:
-        print("❌ Failed to retrieve window bounds.")
-        return None
+    cmd = ["screencapture", "-R", f"{x},{y},{width},{height}", output_path]
+    proc = subprocess.run(cmd)
+    if proc.returncode == 0 and os.path.exists(output_path):
+        return output_path
+    return None
