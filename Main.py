@@ -7,8 +7,7 @@ from window_capture import get_window_bounds, capture_region_screenshot
 from word_search import (
     get_clue_words,
     get_puzzle_grid,
-    find_word_in_grid,
-    find_all_words_in_grid
+    find_word_in_grid
 )
 
 # If Tesseract is not in PATH, set it manually:
@@ -31,8 +30,8 @@ def main():
         sys.exit(1)
     (win_x, win_y, win_w, win_h) = bounds
 
-    capture_region_screenshot(1181, 200, 326, 75, "crossword_region.png")
-    capture_region_screenshot(1181, 275, 316, 370, "crossword_search.png")
+    capture_region_screenshot(1181, 200, 316, 90, "crossword_region.png")
+    capture_region_screenshot(1181, 290, 316, 360, "crossword_search.png")
 
     clue_words = get_clue_words("crossword_region.png")
     print("🔎 Clue Words:", clue_words)
@@ -41,22 +40,13 @@ def main():
     if not grid:
         print("❌ OCR failed to extract a puzzle grid.")
         sys.exit(1)
+
     print("\n🧩 Puzzle Grid for Search:")
-for row in grid:
-    print(" | ".join(row))  # Adds better spacing to avoid merging issues
-    print("\n")
+    for row in grid:
+        print(" | ".join(row))
 
-    found_words_info = []
     for w in clue_words:
-        loc = find_word_in_grid(grid, w)
-        if loc:
-            found_words_info.append((w, loc))
-
-    auto_detected_words = find_all_words_in_grid(grid)
-    if auto_detected_words:
-        print("\n🔎 Additional Words Found in Grid:")
-        for word, loc in auto_detected_words:
-            print(f"✅ Found '{word}' at {loc}")
+        find_word_in_grid(grid, w)
 
     print("✅ Word search complete.")
 

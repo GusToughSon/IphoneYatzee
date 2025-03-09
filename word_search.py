@@ -52,7 +52,7 @@ def get_puzzle_grid(grid_image_path: str):
     # Convert image to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
-    # Apply adaptive thresholding to improve contrast
+    # Improve OCR with adaptive thresholding
     processed = cv2.adaptiveThreshold(
         gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY_INV, 11, 2
@@ -64,29 +64,22 @@ def get_puzzle_grid(grid_image_path: str):
     lines = text.split("\n")
     grid = []
 
-    # Process each row, ensuring equal column count
-    max_cols = 0
+    # Remove empty lines and non-letter symbols
+    lines = [line.strip().upper() for line in lines if line.strip()]
+    max_cols = max(len(line) for line in lines)
+
     for line in lines:
-        line = line.strip().upper()
-        if not line:
-            continue
-
-        # Normalize letters and remove non-alphabetic characters
-        parts = [char for char in line if char.isalpha()]
-        if parts:
-            grid.append(parts)
-            max_cols = max(max_cols, len(parts))
-
-    # **Normalize row lengths** to prevent misalignment
-    for row in grid:
+        row = [char for char in line if char.isalpha()]
         while len(row) < max_cols:
-            row.append(" ")  # Fill with spaces to maintain alignment
+            row.append(" ")  # Fill missing spaces
+        grid.append(row)
 
     print("\n📝 Final Parsed Grid:")
     for row in grid:
         print(" ".join(row))
 
     return grid
+
 # -------------------------------------------------------
 def find_word_in_grid(grid, word):
     """Searches for a word in the grid, checking all 8 directions with full debug info."""
@@ -113,7 +106,6 @@ def find_word_in_grid(grid, word):
                 print(f"   ➡️ Checking '{word}' starting at ({r},{c})")
 
                 for (dr, dc) in DIRECTIONS:
-                    print(f"   🔍 Checking direction (Δr={dr}, Δc={dc}) from ({r},{c})")
                     rr, cc = r, c
                     match = True
                     found_positions = [(rr, cc)]  # Track where letters are found
@@ -128,7 +120,7 @@ def find_word_in_grid(grid, word):
                             break
 
                         # If character doesn't match, stop searching
-                        if grid[rr][cc].strip() != word[i]:  # Ignore extra spaces
+                        if grid[rr][cc] != word[i]:
                             match = False
                             break
 
@@ -142,18 +134,3 @@ def find_word_in_grid(grid, word):
 
     print(f"🚫 '{word}' not found in puzzle at all.\n")
     return None
-
-# -------------------------------------------------------
-def find_all_words_in_grid(grid):
-    """Detects all dictionary words in the grid, even if they are not in the clue list."""
-    found_words = []
-    
-    # Simple built-in dictionary (replace this with a real word list if needed)
-    COMMON_WORDS = {"HORN", "AXLE", "TIRE", "SEAT", "TRUNK", "WIPER", "CAR", "RELATED", "ITEMS", "PARK", "ROAD", "RACE"}
-
-    for word in COMMON_WORDS:
-        loc = find_word_in_grid(grid, word)
-        if loc:
-            found_words.append((word, loc))
-
-    return found_words
