@@ -1,48 +1,51 @@
 import tkinter as tk
-import pyautogui
 
-class RegionSelector:
-    def __init__(self):
+class RegionSelectorUI:
+    def __init__(self, window_x, window_y):
+        """Initializes the region selector relative to the iPhone Mirroring window."""
+        self.window_x = window_x  # ✅ Store iPhone Mirroring window X
+        self.window_y = window_y  # ✅ Store iPhone Mirroring window Y
+
         self.root = tk.Tk()
-        self.root.attributes("-alpha", 0.3)  # ✅ 30% Transparency
-        self.root.attributes("-topmost", True)  # ✅ Force window to stay on top
-        self.root.overrideredirect(True)  # ✅ Remove window borders
-        self.root.geometry(f"{pyautogui.size()[0]}x{pyautogui.size()[1]}+0+0")  # ✅ Fullscreen overlay
+        self.root.title("Region Selector")
+        self.root.attributes("-topmost", True)  # ✅ Always on top
+        self.root.geometry("300x200+100+100")  # ✅ Default size and position
+        self.root.configure(bg="gray")
 
-        self.start_x = None
-        self.start_y = None
-        self.rect = None
-        self.canvas = tk.Canvas(self.root, cursor="cross", bg="gray", highlightthickness=0)
-        self.canvas.pack(fill=tk.BOTH, expand=True)
+        self.label = tk.Label(self.root, text="Move & Resize the window.\nPress ENTER to confirm.",
+                              bg="gray", fg="white", font=("Arial", 12))
+        self.label.pack(expand=True, fill=tk.BOTH)
 
-        # ✅ Bind mouse events
-        self.canvas.bind("<ButtonPress-1>", self.on_press)
-        self.canvas.bind("<B1-Motion>", self.on_drag)
-        self.canvas.bind("<ButtonRelease-1>", self.on_release)
+        # ✅ Track window movement & resizing
+        self.root.bind("<Configure>", self.update_position)
+        self.root.bind("<Return>", self.confirm_selection)  # ✅ Press ENTER to confirm selection
 
-        print("🟢 Region Selector is running... Click and drag to select an area.")
+        print("🟢 Move & Resize over the iPhone Mirroring window.\nPress ENTER to confirm.")
         self.root.mainloop()  # ✅ Start the Tkinter main loop
 
-    def on_press(self, event):
-        self.start_x = event.x
-        self.start_y = event.y
-        if self.rect:
-            self.canvas.delete(self.rect)
+    def update_position(self, event=None):
+        """Gets the window's position and size when moved or resized, relative to the iPhone window."""
+        self.absolute_x = self.root.winfo_x()
+        self.absolute_y = self.root.winfo_y()
+        self.width = self.root.winfo_width()
+        self.height = self.root.winfo_height()
 
-    def on_drag(self, event):
-        self.canvas.delete(self.rect)
-        self.rect = self.canvas.create_rectangle(self.start_x, self.start_y, event.x, event.y, outline="red", width=2)
+        # ✅ Calculate relative coordinates
+        self.relative_x = self.absolute_x - self.window_x
+        self.relative_y = self.absolute_y - self.window_y
 
-    def on_release(self, event):
-        end_x, end_y = event.x, event.y
-        x, y = min(self.start_x, end_x), min(self.start_y, end_y)
-        width, height = abs(self.start_x - end_x), abs(self.start_y - end_y)
+        print(f"🔵 Moving Window: X={self.absolute_x}, Y={self.absolute_y}, Width={self.width}, Height={self.height}")
+        print(f"📏 Relative to iPhone Mirroring: X={self.relative_x}, Y={self.relative_y}, Width={self.width}, Height={self.height}")
 
-        print(f"🟢 Selected Region: X={x}, Y={y}, Width={width}, Height={height}")
-        self.root.destroy()  # ✅ Close the window after selection
+    def confirm_selection(self, event=None):
+        """Prints the final relative selection and closes the window."""
+        print(f"✅ Final Selection (Relative to iPhone Mirroring): X={self.relative_x}, Y={self.relative_y}, Width={self.width}, Height={self.height}")
+        self.root.destroy()
 
-def select_region():
-    RegionSelector()  # ✅ Run the Region Selector
+def select_region(window_x, window_y):
+    """Launches the UI overlay to select a region relative to iPhone Mirroring window."""
+    RegionSelectorUI(window_x, window_y)
 
 if __name__ == "__main__":
-    select_region()
+    # Test Run: Replace with actual values from get_window_bounds()
+    select_region(1173, 243)  # Example window position (Replace with real data)
